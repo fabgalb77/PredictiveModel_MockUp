@@ -1,0 +1,12 @@
+{
+  "patient_id": "P002",
+  "recommended_surgery": {
+    "T12-L1": "no_surgery",
+    "L1-L2": "no_surgery",
+    "L2-L3": "decompression",
+    "L3-L4": "no_surgery",
+    "L4-L5": "no_surgery",
+    "L5-S1": "decompression_fusion",
+    "pelvic_fixation": false
+  }
+}

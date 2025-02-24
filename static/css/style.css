@@ -1,0 +1,23 @@
+.table-hover tbody tr:hover {
+    cursor: pointer;
+    background-color: rgba(0,0,0,.075);
+}
+
+.action-buttons {
+    margin: 20px 0;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}

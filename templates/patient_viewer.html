@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Patient Viewer - {{ patient.name }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            padding: 15px;
+            gap: 15px;
+            max-height: calc(100vh - 120px);
+        }
+        .series-list {
+            width: 250px;
+            overflow-y: auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .series-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .series-item:hover {
+            background-color: #f0f7ff;
+        }
+        .series-item.active {
+            background-color: #e3f2fd;
+            border-left: 4px solid #0d6efd;
+        }
+        .series-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            color: #0d6efd;
+        }
+        .image-viewer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #000;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .image-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .dicom-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .slider-container {
+            padding: 15px;
+            background-color: #333;
+            border-top: 1px solid #555;
+            display: none;
+        }
+        .slider-container.active {
+            display: block;
+        }
+        .prediction-panel {
+            width: 300px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls-footer {
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            text-align: right;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+        .series-info {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 3px;
+        }
+        .patient-name {
+            padding: 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="patient-name">
+        <h5 class="mb-0">{{ patient.name }} (ID: {{ patient.id }})</h5>
+    </div>
+    
+    <div class="main-container">
+        <!-- Series List Column -->
+        <div class="series-list">
+            <div class="series-item" data-series-type="xray" data-series-folder="XRAY_AP" onclick="loadSeries(this, 'xray', 'XRAY_AP')">
+                <i class="bi bi-film series-icon"></i>
+                <div>
+                    <div>AP X-Ray</div>
+                    <div class="series-info">Anteroposterior View</div>
+                </div>
+            </div>
+            <div class="series-item" data-series-type="xray" data-series-folder="XRAY_LAT" onclick="loadSeries(this, 'xray', 'XRAY_LAT')">
+                <i class="bi bi-film series-icon"></i>
+                <div>
+                    <div>Lateral X-Ray</div>
+                    <div class="series-info">Lateral View</div>
+                </div>
+            </div>
+            <div class="series-item" data-series-type="mri" data-series-folder="MRI_T1_SAG" onclick="loadSeries(this, 'mri', 'MRI_T1_SAG')">
+                <i class="bi bi-layers series-icon"></i>
+                <div>
+                    <div>T1 Sagittal MRI</div>
+                    <div class="series-info">T1-weighted</div>
+                </div>
+            </div>
+            <div class="series-item" data-series-type="mri" data-series-folder="MRI_T2_SAG" onclick="loadSeries(this, 'mri', 'MRI_T2_SAG')">
+                <i class="bi bi-layers series-icon"></i>
+                <div>
+                    <div>T2 Sagittal MRI</div>
+                    <div class="series-info">T2-weighted</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Image Viewer Column -->
+        <div class="image-viewer">
+            <div class="image-container" style="position: relative; width: 100%; height: 100%;">
+                <img id="dicomImage" class="dicom-image" style="max-width: 100%; max-height: 100%; object-fit: contain;" src="{{ url_for('static', filename='images/select_image.png') }}" alt="Select an image series">
+                <canvas id="overlayCanvas" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; display: none;"></canvas>
+            </div>
+            <div id="sliderContainer" class="slider-container">
+                <input type="range" class="form-range" min="0" max="0" id="sliceSlider" oninput="updateSlice()">
+                <div class="d-flex justify-content-between text-white">
+                    <span id="sliceInfo">Slice: 0/0</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Prediction Panel Column -->
+        <div class="prediction-panel">
+            <h6>Analysis & Prediction</h6>
+            <div class="d-grid gap-2 mb-4">
+                <button id="analyzeImageBtn" class="btn btn-outline-primary" onclick="analyzeCurrentImage()">
+                    <i class="bi bi-grid"></i> Analyze Images
+                </button>
+                <button id="predictOutcomesBtn" class="btn btn-outline-primary" onclick="openPredictionInterface()" disabled>
+                    <i class="bi bi-graph-up"></i> Predict Outcomes
+                </button>
+            </div>
+            <div class="mb-3 d-flex align-items-center">
+                <input type="checkbox" id="showAnnotations" class="form-check-input me-2" checked>
+                <label for="showAnnotations" class="form-check-label">Show Annotations</label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="controls-footer">
+        <button class="btn btn-primary" onclick="window.close()">Close</button>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentPatientId = "{{ patient.id }}";
+        let currentSeries = null;
+        let currentSliceIndex = 0;
+        let totalSlices = 0;
+        let preloadedImages = {};
+        let isPreloading = false;
+        let lastSlideValue = 0;
+        let landmarksData = null;
+        let isAnalysisActive = false;
+        let wasAnalysisActive = false;
+
+        document.getElementById('showAnnotations').addEventListener('change', function(e) {
+            const canvas = document.getElementById('overlayCanvas');
+            if (canvas) {
+                canvas.style.display = e.target.checked ? 'block' : 'none';
+            }
+            
+            // If annotations are enabled, redraw them
+            if (e.target.checked && isAnalysisActive) {
+                analyzeCurrentImage();
+            }
+        });
+        
+        // Automatically load first series when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize slide throttling
+            const slider = document.getElementById('sliceSlider');
+            let throttleTimer;
+            
+            slider.addEventListener('input', function() {
+                if (throttleTimer) clearTimeout(throttleTimer);
+                throttleTimer = setTimeout(updateSlice, 20); // 20ms throttle
+            });
+            
+            // Select first series item
+            const firstSeries = document.querySelector('.series-item');
+            if (firstSeries) {
+                setTimeout(() => {
+                    loadSeries(
+                        firstSeries, 
+                        firstSeries.dataset.seriesType, 
+                        firstSeries.dataset.seriesFolder
+                    );
+                }, 100);
+            }
+            
+            // Fetch landmarks data
+            fetchLandmarksData();
+
+            // Add click handler to maintain analysis state
+            const seriesItems = document.querySelectorAll('.series-item');
+            seriesItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // If analysis is active, reapply it after image loads
+                    if (isAnalysisActive) {
+                        const dicomImage = document.getElementById('dicomImage');
+                        dicomImage.addEventListener('load', function onceLoaded() {
+                            // Remove the listener to prevent multiple calls
+                            dicomImage.removeEventListener('load', onceLoaded);
+                            // Reapply analysis after a short delay
+                            setTimeout(analyzeCurrentImage, 200);
+                        });
+                    }
+                });
+            });
+        });
+
+        function openPredictionInterface() {
+            window.open(`/predict/${currentPatientId}`, '_blank', 'width=800,height=900');
+        }
+        
+        function fetchLandmarksData() {
+            fetch(`/patient_landmarks/${currentPatientId}`)
+                .then(response => response.json())
+                .then(data => {
+                    landmarksData = data;
+                    console.log("Landmarks data loaded");
+                })
+                .catch(error => {
+                    console.error("Error loading landmarks data:", error);
+                });
+        }
+        
+        function loadSeries(element, type, folder) {
+            // Update active class
+            document.querySelectorAll('.series-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            // Update current series info
+            currentSeries = {
+                type: type,
+                folder: folder
+            };
+            
+            // Show/hide slider for MRI series
+            const sliderContainer = document.getElementById('sliderContainer');
+            const cacheKey = `${currentPatientId}_${folder}`;
+            
+            if (type === 'mri') {
+                // When fetching MRI series info:
+                fetch(`/series_info/${currentPatientId}/${folder}`)
+                    .then(response => response.json())
+                    .then(info => {
+                        totalSlices = info.slices;
+                        currentSliceIndex = 0; // Start at first slice instead of middle
+                        
+                        const slider = document.getElementById('sliceSlider');
+                        slider.min = 0;
+                        slider.max = totalSlices - 1;
+                        slider.value = currentSliceIndex;
+                        
+                        updateSliceInfo();
+                        loadImageDirect(currentSliceIndex);
+                        sliderContainer.classList.add('active');
+                        
+                        // Background preloading still starts from beginning
+                        if (!preloadedImages[cacheKey] && !isPreloading) {
+                            startBackgroundPreloading(folder);
+                        }
+                    });
+            } else {
+                // For X-rays, just load the single image directly
+                loadImageDirect(0);
+                sliderContainer.classList.remove('active');
+            }
+        }
+
+        function loadImageDirect(index) {
+            if (!currentSeries) return;
+            
+            const imageUrl = `/patient_image/${currentPatientId}/${currentSeries.folder}/${index}`;
+            const imageElement = document.getElementById('dicomImage');
+            imageElement.src = imageUrl;
+            
+            if (currentSeries.type === 'mri') {
+                currentSliceIndex = index;
+                updateSliceInfo();
+            }
+        }
+
+
+
+        function startBackgroundPreloading(folder) {
+            const cacheKey = `${currentPatientId}_${folder}`;
+            isPreloading = true;
+            preloadedImages[cacheKey] = [];
+            
+            // Small indicator that doesn't block UI
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'preloadStatus';
+            statusDiv.style.position = 'fixed';
+            statusDiv.style.bottom = '10px';
+            statusDiv.style.right = '10px';
+            statusDiv.style.padding = '5px 10px';
+            statusDiv.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            statusDiv.style.color = 'white';
+            statusDiv.style.borderRadius = '4px';
+            statusDiv.style.fontSize = '12px';
+            statusDiv.innerHTML = 'Preloading...';
+            document.body.appendChild(statusDiv);
+            
+            // Sequential background loading
+            let currentIndex = 0;
+            
+            function loadNextInBackground() {
+                if (currentIndex >= totalSlices) {
+                    // All images loaded
+                    isPreloading = false;
+                    if (statusDiv.parentNode) {
+                        document.body.removeChild(statusDiv);
+                    }
+                    return;
+                }
+                
+                const img = new Image();
+                img.onload = function() {
+                    preloadedImages[cacheKey][currentIndex] = img.src;
+                    currentIndex++;
+                    loadNextInBackground();
+                };
+                img.onerror = function() {
+                    currentIndex++;
+                    loadNextInBackground();
+                };
+                img.src = `/patient_image/${currentPatientId}/${folder}/${currentIndex}`;
+            }
+            
+            // Start background loading
+            loadNextInBackground();
+        }
+        
+        function updateSlice() {
+            const slider = document.getElementById('sliceSlider');
+            const index = parseInt(slider.value);
+            
+            // Only process if the value has changed
+            if (index !== lastSlideValue) {
+                lastSlideValue = index;
+                
+                // Try to use preloaded image if available
+                const cacheKey = `${currentPatientId}_${currentSeries.folder}`;
+                if (preloadedImages[cacheKey] && preloadedImages[cacheKey][index]) {
+                    const imageElement = document.getElementById('dicomImage');
+                    imageElement.src = preloadedImages[cacheKey][index];
+                } else {
+                    // Fall back to direct loading
+                    loadImageDirect(index);
+                }
+                
+                currentSliceIndex = index;
+                updateSliceInfo();
+            }
+        }
+        
+        function updateSliceInfo() {
+            const sliceInfo = document.getElementById('sliceInfo');
+            sliceInfo.textContent = `Slice: ${currentSliceIndex + 1}/${totalSlices}`;
+        }
+
+        function displayXrayMeasurements(seriesKey) {
+            // Populate measurements
+            const measurementsContent = document.getElementById('measurementsContent');
+            const measurements = landmarksData[seriesKey].measurements;
+            
+            let measurementsHTML = '<table class="table table-sm table-dark">';
+            
+            if (seriesKey === 'XRAY_AP') {
+                measurementsHTML += `
+                    <tr><td>Coronal Pelvic Tilt</td><td>${measurements.coronal_pelvic_tilt.toFixed(1)}°</td></tr>
+                    <tr><td>Cobb Angle</td><td>${measurements.cobb_angle.toFixed(1)}°</td></tr>
+                `;
+            } else if (seriesKey === 'XRAY_LAT') {
+                measurementsHTML += `
+                    <tr><td>Pelvic Incidence</td><td>${measurements.pelvic_incidence.toFixed(1)}°</td></tr>
+                    <tr><td>Sacral Slope</td><td>${measurements.sacral_slope.toFixed(1)}°</td></tr>
+                    <tr><td>L1-S1 Lordosis</td><td>${measurements.l1_s1_lordosis.toFixed(1)}°</td></tr>
+                    <tr><td>L1 Slope</td><td>${measurements.l1_slope.toFixed(1)}°</td></tr>
+                `;
+            }
+            
+            measurementsHTML += '</table>';
+            measurementsContent.innerHTML = measurementsHTML;
+            
+            // Draw landmarks on canvas
+            drawXrayLandmarks(landmarksData[seriesKey]);
+        }
+
+        function drawXrayLandmarks(seriesData) {
+            const image = document.getElementById('dicomImage');
+            const canvas = document.getElementById('overlayCanvas');
+            
+            // Wait for image to be fully loaded
+            if (!image.complete) {
+                image.onload = function() {
+                    drawXrayLandmarksOnCanvas(canvas, image, seriesData);
+                };
+            } else {
+                drawXrayLandmarksOnCanvas(canvas, image, seriesData);
+            }
+        }
+
+        function drawXrayLandmarksOnCanvas(canvas, image, seriesData) {
+            
+            if (!document.getElementById('showAnnotations').checked) {
+                canvas.style.display = 'none';
+                return;
+            }
+
+            // Use setTimeout to ensure rendering is complete
+            setTimeout(() => {
+                // Get the container and image dimensions
+                const container = image.parentElement;
+                const containerWidth = container.clientWidth;
+                const containerHeight = container.clientHeight;
+                
+                // Calculate the displayed image dimensions (accounting for object-fit: contain)
+                const imgNaturalWidth = image.naturalWidth || seriesData.image_dimensions[0];
+                const imgNaturalHeight = image.naturalHeight || seriesData.image_dimensions[1];
+                const imgAspect = imgNaturalWidth / imgNaturalHeight;
+                const containerAspect = containerWidth / containerHeight;
+                
+                let displayedWidth, displayedHeight, offsetX, offsetY;
+                
+                if (containerAspect > imgAspect) {
+                    // Height constrained, width has padding
+                    displayedHeight = containerHeight;
+                    displayedWidth = containerHeight * imgAspect;
+                    offsetX = (containerWidth - displayedWidth) / 2;
+                    offsetY = 0;
+                } else {
+                    // Width constrained, height has padding
+                    displayedWidth = containerWidth;
+                    displayedHeight = containerWidth / imgAspect;
+                    offsetX = 0;
+                    offsetY = (containerHeight - displayedHeight) / 2;
+                }
+                
+                // Set canvas dimensions to match the container
+                canvas.width = containerWidth;
+                canvas.height = containerHeight;
+                canvas.style.display = 'block';
+                
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Calculate the scaling factor for landmarks
+                const scaleX = displayedWidth / seriesData.image_dimensions[0];
+                const scaleY = displayedHeight / seriesData.image_dimensions[1];
+                
+                // Scale function that accounts for letterboxing/pillarboxing
+                function scalePoint(point) {
+                    return [
+                        point[0] * scaleX + offsetX,
+                        point[1] * scaleY + offsetY
+                    ];
+                }
+                // For XRAY_AP
+                if (seriesData.landmarks.left_hip_center && seriesData.landmarks.right_hip_center) {
+                    // Coronal pelvic tilt - line between hip centers
+                    const lHip = scalePoint(seriesData.landmarks.left_hip_center);
+                    const rHip = scalePoint(seriesData.landmarks.right_hip_center);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(lHip[0], lHip[1]);
+                    ctx.lineTo(rHip[0], rHip[1]);
+                    ctx.strokeStyle = '#ff0000'; // Keep green for pelvic tilt
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw hip center points
+                    drawPoint(ctx, lHip[0], lHip[1], '#ff0000');
+                    drawPoint(ctx, rHip[0], rHip[1], '#ff0000');
+                    
+                    // Add pelvic tilt angle label
+                    const midpoint = [(lHip[0] + rHip[0])/2, (lHip[1] + rHip[1])/2 - 20];
+                    drawLabel(ctx, midpoint[0], midpoint[1], 
+                              `Pelvic Tilt: ${seriesData.measurements.coronal_pelvic_tilt.toFixed(1)}°`);
+                }
+
+                
+                // Draw Cobb angle if AP X-ray
+                if (seriesData.landmarks.upper_vert_endplate && seriesData.landmarks.lower_vert_endplate) {
+                    const upperLeft = scalePoint(seriesData.landmarks.upper_vert_endplate.left_point);
+                    const upperRight = scalePoint(seriesData.landmarks.upper_vert_endplate.right_point);
+                    const lowerLeft = scalePoint(seriesData.landmarks.lower_vert_endplate.left_point);
+                    const lowerRight = scalePoint(seriesData.landmarks.lower_vert_endplate.right_point);
+                    
+                    // Draw upper endplate line
+                    ctx.beginPath();
+                    ctx.moveTo(upperLeft[0], upperLeft[1]);
+                    ctx.lineTo(upperRight[0], upperRight[1]);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw lower endplate line
+                    ctx.beginPath();
+                    ctx.moveTo(lowerLeft[0], lowerLeft[1]);
+                    ctx.lineTo(lowerRight[0], lowerRight[1]);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Add vertebra labels
+                    drawLabel(ctx, upperLeft[0] - 30, upperLeft[1], 
+                              seriesData.landmarks.upper_vert_endplate.vertebra);
+                    drawLabel(ctx, lowerLeft[0] - 30, lowerLeft[1], 
+                              seriesData.landmarks.lower_vert_endplate.vertebra);
+                    
+                    // Add Cobb angle label
+                    const midpoint = [
+                        (upperLeft[0] + lowerRight[0])/2, 
+                        (upperLeft[1] + lowerRight[1])/2
+                    ];
+                    drawLabel(ctx, midpoint[0], midpoint[1], 
+                              `Cobb: ${seriesData.measurements.cobb_angle.toFixed(1)}°`);
+                }
+                
+                // Draw lateral X-ray landmarks
+                if (seriesData.landmarks.hip_center && seriesData.landmarks.sacral_plateau) {
+                    const hipCenter = scalePoint(seriesData.landmarks.hip_center);
+                    const sacralPost = scalePoint(seriesData.landmarks.sacral_plateau.posterior_point);
+                    const sacralAnt = scalePoint(seriesData.landmarks.sacral_plateau.anterior_point);
+                    
+                    // Draw sacral plateau line
+                    ctx.beginPath();
+                    ctx.moveTo(sacralPost[0], sacralPost[1]);
+                    ctx.lineTo(sacralAnt[0], sacralAnt[1]);
+                    ctx.strokeStyle = '#ff0000'; // Change to red
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw hip center point
+                    drawPoint(ctx, hipCenter[0], hipCenter[1], '#ff0000'); // Change to red
+                    
+                    // Draw pelvic incidence helper line
+                    ctx.beginPath();
+                    ctx.moveTo(hipCenter[0], hipCenter[1]);
+                    ctx.lineTo((sacralAnt[0] + sacralPost[0])/2, (sacralAnt[1] + sacralPost[1])/2);
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeStyle = '#ff0000'; // Change to red
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    drawLabel(ctx, hipCenter[0] + 20, hipCenter[1] - 20, 
+                        `PI: ${seriesData.measurements.pelvic_incidence.toFixed(1)}°`);
+                }
+                
+                // Draw lordosis if lateral X-ray
+                if (seriesData.landmarks.L1_superior_endplate && seriesData.landmarks.L5_inferior_endplate) {  // Changed condition
+                    const l1Post = scalePoint(seriesData.landmarks.L1_superior_endplate.posterior_point);
+                    const l1Ant = scalePoint(seriesData.landmarks.L1_superior_endplate.anterior_point);
+                    
+                    // Draw L1 endplate
+                    ctx.beginPath();
+                    ctx.moveTo(l1Post[0], l1Post[1]);
+                    ctx.lineTo(l1Ant[0], l1Ant[1]);
+                    ctx.strokeStyle = '#ff0000'; 
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Draw vertical reference line for L1 slope
+                    const verticalHeight = 40;
+                    ctx.beginPath();
+                    ctx.moveTo(l1Post[0], l1Post[1]);
+                    ctx.lineTo(l1Post[0], l1Post[1] - verticalHeight);
+                    ctx.setLineDash([2, 2]);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    
+                    // Add L1 slope label
+                    drawLabel(ctx, l1Post[0] - 40, l1Post[1] - 20, 
+                             `L1 Slope: ${seriesData.measurements.l1_slope.toFixed(1)}°`);
+                    
+                    // Draw L5 inferior endplate
+                    const l5Post = scalePoint(seriesData.landmarks.L5_inferior_endplate.posterior_point);
+                    const l5Ant = scalePoint(seriesData.landmarks.L5_inferior_endplate.anterior_point);
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(l5Post[0], l5Post[1]);
+                    ctx.lineTo(l5Ant[0], l5Ant[1]);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Calculate centers for lordosis line
+                    const l1Center = [
+                        (l1Ant[0] + l1Post[0]) / 2,
+                        (l1Ant[1] + l1Post[1]) / 2
+                    ];
+                    
+                    const l5Center = [
+                        (l5Ant[0] + l5Post[0]) / 2,
+                        (l5Ant[1] + l5Post[1]) / 2
+                    ];
+                    
+                    // Draw lordosis line
+                    ctx.beginPath();
+                    ctx.moveTo(l1Center[0], l1Center[1]);
+                    ctx.lineTo(l5Center[0], l5Center[1]);
+                    ctx.strokeStyle = '#ff0000';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    // Add lordosis label
+                    const labelPoint = [
+                        (l1Center[0] + l5Center[0]) / 2,
+                        (l1Center[1] + l5Center[1]) / 2 - 20
+                    ];
+                    drawLabel(ctx, labelPoint[0], labelPoint[1], 
+                             `Lordosis: ${seriesData.measurements.l1_s1_lordosis.toFixed(1)}°`);
+                }
+            }, 100); // Small delay to ensure image rendering is complete
+        }
+
+        function drawPoint(ctx, x, y, color, radius = 4) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        function drawLabel(ctx, x, y, text) {
+            ctx.font = '14px Arial';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.fillRect(x - 2, y - 16, ctx.measureText(text).width + 4, 20);
+            ctx.fillStyle = '#fff';
+            ctx.fillText(text, x, y);
+        }
+
+        function showAnalysisMessage(message) {
+            const measurementsPanel = document.getElementById('measurementsPanel');
+            measurementsPanel.style.display = 'block';
+            
+            const measurementsContent = document.getElementById('measurementsContent');
+            measurementsContent.innerHTML = `<div class="alert alert-info py-2">${message}</div>`;
+        }
+
+        function clearAnalysis() {
+            isAnalysisActive = false;
+            
+            // Hide measurements panel
+            const measurementsPanel = document.getElementById('measurementsPanel');
+            measurementsPanel.style.display = 'none';
+            
+            // Clear canvas
+            const canvas = document.getElementById('overlayCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'none';
+
+            // Disable Predict Outcomes button
+            document.getElementById('predictOutcomesBtn').disabled = true;
+        }
+
+        // MRI visualization with simplified click handling
+        function analyzeCurrentImage() {
+            console.log("analyzeCurrentImage called");
+            
+            if (!currentSeries || !landmarksData) {
+                console.log("Missing data", { currentSeries, landmarksData });
+                return;
+            }
+            
+            const seriesKey = currentSeries.folder;
+            console.log("Current series:", seriesKey);
+            
+            // Check if we have landmarks for this series
+            if (!landmarksData[seriesKey]) {
+                console.log("No landmarks for series:", seriesKey);
+                return;
+            }
+            
+            isAnalysisActive = true;
+            
+            // Handle X-ray visualization
+            if (seriesKey.startsWith('XRAY')) {
+                drawXrayLandmarks(landmarksData[seriesKey]);
+            } else if (seriesKey.startsWith('MRI')) {
+                // MRI visualization
+                console.log("Drawing MRI landmarks");
+                drawMriLandmarks(landmarksData[seriesKey]);
+            }
+
+            // Enable the Predict Outcomes button
+            document.getElementById('predictOutcomesBtn').disabled = false;
+        }
+
+        function drawMriLandmarks(seriesData) {
+            console.log("drawMriLandmarks called");
+            
+            const image = document.getElementById('dicomImage');
+            const canvas = document.getElementById('overlayCanvas');
+            
+            if (!canvas) {
+                console.error("Canvas element not found");
+                return;
+            }
+            
+            console.log("Image ready state:", image.complete);
+            
+            // Wait for image to be fully loaded
+            if (!image.complete) {
+                console.log("Image not loaded, setting onload handler");
+                image.onload = function() {
+                    console.log("Image loaded in onload handler");
+                    drawMriLandmarksOnCanvas(canvas, image, seriesData);
+                };
+            } else {
+                console.log("Image already loaded");
+                drawMriLandmarksOnCanvas(canvas, image, seriesData);
+            }
+        }
+
+        // Helper functions for the click handler
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+        }
+
+        function showInfo(x, y, content) {
+            // Remove any existing popup
+            hideInfo();
+            
+            // Create popup
+            const popup = document.createElement('div');
+            popup.id = 'infoPopup';
+            popup.style.cssText = `
+                position: fixed;
+                left: ${x + 10}px;
+                top: ${y + 10}px;
+                background: rgba(33, 33, 33, 0.95);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                z-index: 1000;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                animation: fadeIn 0.2s ease-out;
+            `;
+            
+            // Add close button
+            popup.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">${content}</div>
+                    <div style="cursor: pointer; padding-left: 8px;" onclick="hideInfo()">✕</div>
+                </div>
+            `;
+            
+            document.body.appendChild(popup);
+        }
+
+        function hideInfo() {
+            const popup = document.getElementById('infoPopup');
+            if (popup) popup.remove();
+        }
+
+        function formatVertebraInfo(data) {
+            return `
+                <div style="margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #555; padding-bottom: 4px;">
+                    Vertebra ${data.level}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Bone Mineral Density:</b><br>${data.bmd.toFixed(2)} g/cm²
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Modic Changes:</b><br>${data.modic}
+                </div>
+            `;
+        }
+
+        function formatDiscInfo(data) {
+            const stenosis = ["None", "Mild", "Moderate", "Severe"][data.stenosis - 1] || "Unknown";
+            
+            return `
+                <div style="margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid #555; padding-bottom: 4px;">
+                    Disc ${data.level}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Height:</b><br>${data.height.toFixed(1)} mm
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Pfirrmann Grade:</b><br>${data.pfirrmann}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Central Canal Stenosis:</b><br>${stenosis}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Foraminal Stenosis:</b><br>${data.foraminal ? "Yes" : "No"}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Endplate Defects:</b><br>${data.endplate ? "Yes" : "No"}
+                </div>
+                <div style="margin: 4px 0;">
+                    <b>Disc Herniation:</b><br>${data.herniation ? "Yes" : "No"}
+                </div>
+            `;
+        }
+
+        function drawMriLandmarksOnCanvas(canvas, image, seriesData) {
+            console.log("drawMriLandmarksOnCanvas called");
+
+            if (!document.getElementById('showAnnotations').checked) {
+                canvas.style.display = 'none';
+                return;
+            }
+            
+            // Basic setup - get container dimensions
+            const container = image.parentElement;
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            
+            console.log("Container dimensions:", containerWidth, containerHeight);
+            
+            // Set canvas dimensions to match the container
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+            canvas.style.display = 'block';
+            
+            // Make canvas capture pointer events
+            canvas.style.pointerEvents = 'auto';
+            
+            // Get drawing context
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Figure out the actual image size with zero padding
+            const imgNaturalWidth = image.naturalWidth || seriesData.image_dimensions[0];
+            const imgNaturalHeight = image.naturalHeight || seriesData.image_dimensions[1];
+            
+            console.log("Image natural dimensions:", imgNaturalWidth, imgNaturalHeight);
+            
+            // Calculate scaling and offsets
+            const imgAspect = imgNaturalWidth / imgNaturalHeight;
+            const containerAspect = containerWidth / containerHeight;
+            
+            let displayedWidth, displayedHeight, offsetX, offsetY;
+            
+            if (containerAspect > imgAspect) {
+                // Height constrained, width has padding
+                displayedHeight = containerHeight;
+                displayedWidth = containerHeight * imgAspect;
+                offsetX = (containerWidth - displayedWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Width constrained, height has padding
+                displayedWidth = containerWidth;
+                displayedHeight = containerWidth / imgAspect;
+                offsetX = 0;
+                offsetY = (containerHeight - displayedHeight) / 2;
+            }
+            
+            console.log("Calculated displayed dimensions:", {
+                displayedWidth, displayedHeight, offsetX, offsetY
+            });
+            
+            // Calculate scaling factors
+            const scaleX = displayedWidth / seriesData.image_dimensions[0];
+            const scaleY = displayedHeight / seriesData.image_dimensions[1];
+            
+            console.log("Scale factors:", scaleX, scaleY);
+            
+            // Scaling function
+            function scalePoint(point) {
+                return [
+                    point[0] * scaleX + offsetX,
+                    point[1] * scaleY + offsetY
+                ];
+            }
+            
+            // Store regions for click detection - global so we can access them
+            window.vertebraeRegions = [];
+            window.discRegions = [];
+            
+            // Check if we're on the central slice
+            const isCentralSlice = currentSliceIndex === seriesData.slice_info.central_slice;
+            console.log("Is central slice:", isCentralSlice, currentSliceIndex, seriesData.slice_info.central_slice);
+            
+            // Draw vertebral bodies
+            if (seriesData.landmarks?.central_slice?.vertebral_bodies) {
+                console.log("Drawing vertebrae:", seriesData.landmarks.central_slice.vertebral_bodies.length);
+                
+                seriesData.landmarks.central_slice.vertebral_bodies.forEach((vertebra, index) => {
+                    // Skip S1 vertebra completely
+                    if (vertebra.vertebra === "S1") {
+                        console.log("Skipping S1 vertebra");
+                        return; // Skip this iteration
+                    }
+                    console.log(`Drawing vertebra ${index+1}:`, vertebra.vertebra);
+                    
+                    // Create coordinates for vertebra corners
+                    const corners = [
+                        scalePoint(vertebra.corners.superior_posterior),
+                        scalePoint(vertebra.corners.superior_anterior),
+                        scalePoint(vertebra.corners.inferior_anterior),
+                        scalePoint(vertebra.corners.inferior_posterior)
+                    ];
+                    
+                    console.log("Vertebra corners:", corners);
+                    
+                    // Draw vertebra outline
+                    ctx.beginPath();
+                    ctx.moveTo(corners[0][0], corners[0][1]);
+                    ctx.lineTo(corners[1][0], corners[1][1]);
+                    ctx.lineTo(corners[2][0], corners[2][1]);
+                    ctx.lineTo(corners[3][0], corners[3][1]);
+                    ctx.closePath();
+                    
+                    // Fill with appropriate color
+                    ctx.fillStyle = isCentralSlice ? 'rgba(255, 0, 0, 0.3)' : 'rgba(200, 200, 200, 0.3)';
+                    ctx.fill();
+                    
+                    // Draw outline
+                    ctx.strokeStyle = isCentralSlice ? '#ff0000' : '#666666';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Add vertebra label
+                    const centerX = (corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0]) / 4;
+                    const centerY = (corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1]) / 4;
+                    
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(vertebra.vertebra, centerX, centerY);
+                    
+                    // Store vertebra region for click detection
+                    const vertebraData = seriesData.measurements.vertebral_bodies[vertebra.vertebra];
+                    window.vertebraeRegions.push({
+                        points: corners,
+                        data: {
+                            level: vertebra.vertebra,
+                            bmd: vertebraData.bone_mineral_density,
+                            modic: vertebraData.modic_changes
+                        }
+                    });
+                });
+            }
+
+            // Draw disc spaces with clearer visual feedback
+            if (seriesData.landmarks?.central_slice?.disc_spaces) {
+                console.log("Drawing discs:", seriesData.landmarks.central_slice.disc_spaces.length);
+                
+                seriesData.landmarks.central_slice.disc_spaces.forEach((disc, index) => {
+                    console.log(`Drawing disc ${index+1}:`, disc.level);
+                    
+                    // Make sure disc.center is valid
+                    if (!disc.center || disc.center.length < 2) {
+                        console.log("Invalid disc center, skipping:", disc);
+                        return;
+                    }
+                    
+                    const discCenter = scalePoint(disc.center);
+                    const halfWidth = disc.width * scaleX / 2;
+                    const halfHeight = disc.height * scaleY / 2;
+                    
+                    // Make disc rectangles slightly larger for easier clicking
+                    const discPoints = [
+                        [discCenter[0] - halfWidth - 5, discCenter[1] - halfHeight - 5],
+                        [discCenter[0] + halfWidth + 5, discCenter[1] - halfHeight - 5],
+                        [discCenter[0] + halfWidth + 5, discCenter[1] + halfHeight + 5],
+                        [discCenter[0] - halfWidth - 5, discCenter[1] + halfHeight + 5]
+                    ];
+                    
+                    // Draw disc with more visibility
+                    ctx.beginPath();
+                    ctx.moveTo(discPoints[0][0], discPoints[0][1]);
+                    ctx.lineTo(discPoints[1][0], discPoints[1][1]);
+                    ctx.lineTo(discPoints[2][0], discPoints[2][1]);
+                    ctx.lineTo(discPoints[3][0], discPoints[3][1]);
+                    ctx.closePath();
+                    
+                    ctx.fillStyle = 'rgba(0, 100, 255, 0.3)'; // More opacity
+                    ctx.fill();
+                    ctx.strokeStyle = '#0066ff';
+                    ctx.lineWidth = 2; // Thicker outline
+                    ctx.stroke();
+                    
+                    // Add disc label for better identification
+                    ctx.font = '12px Arial';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(disc.level, discCenter[0], discCenter[1]);
+                    
+                    // Store disc region for click detection
+                    const discData = seriesData.measurements.intervertebral_discs[disc.level];
+                    if (discData) {
+                        window.discRegions.push({
+                            points: discPoints,
+                            data: {
+                                level: disc.level,
+                                height: discData.disc_height,
+                                pfirrmann: discData.pfirrmann_grade,
+                                stenosis: discData.central_canal_stenosis,
+                                foraminal: discData.foraminal_stenosis,
+                                endplate: discData.endplate_defects,
+                                herniation: discData.disc_herniation
+                            }
+                        });
+                        console.log("Added disc region:", disc.level, discPoints);
+                    } else {
+                        console.log("Missing disc data for:", disc.level);
+                    }
+                });
+            }
+
+            // DIRECT CLICK HANDLER - simplified approach
+            canvas.onclick = function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                
+                console.log("Click at:", clickX, clickY);
+                
+                let found = false;
+                
+                // Check vertebrae with center-based detection
+                if (window.vertebraeRegions) {
+                    for (const region of window.vertebraeRegions) {
+                        // Calculate vertebra center
+                        const centerX = (region.points[0][0] + region.points[1][0] + region.points[2][0] + region.points[3][0]) / 4;
+                        const centerY = (region.points[0][1] + region.points[1][1] + region.points[2][1] + region.points[3][1]) / 4;
+                        
+                        // Check if click is within 10 pixels of center
+                        if (distance(clickX, clickY, centerX, centerY) < 10) {
+                            console.log("Hit vertebra:", region.data.level);
+                            showInfo(e.clientX, e.clientY, formatVertebraInfo(region.data));
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                // Check discs if no vertebra was hit
+                if (!found && window.discRegions) {
+                    for (const region of window.discRegions) {
+                        const points = region.points;
+                        const minX = Math.min(...points.map(p => p[0]));
+                        const maxX = Math.max(...points.map(p => p[0]));
+                        const minY = Math.min(...points.map(p => p[1]));
+                        const maxY = Math.max(...points.map(p => p[1]));
+                        
+                        if (clickX >= minX && clickX <= maxX && clickY >= minY && clickY <= maxY) {
+                            console.log("Hit disc:", region.data.level);
+                            showInfo(e.clientX, e.clientY, formatDiscInfo(region.data));
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        };        
+
+        // Update updateSlice to maintain analysis when navigating slices
+        function updateSlice() {
+            const slider = document.getElementById('sliceSlider');
+            const index = parseInt(slider.value);
+            
+            // Only process if the value has changed
+            if (index !== lastSlideValue) {
+                lastSlideValue = index;
+                
+                // Remember analysis state
+                const wasAnalysisActive = isAnalysisActive;
+                
+                // Try to use preloaded image if available
+                const cacheKey = `${currentPatientId}_${currentSeries.folder}`;
+                if (preloadedImages[cacheKey] && preloadedImages[cacheKey][index]) {
+                    const imageElement = document.getElementById('dicomImage');
+                    imageElement.src = preloadedImages[cacheKey][index];
+                } else {
+                    // Fall back to direct loading
+                    loadImageDirect(index);
+                }
+                
+                currentSliceIndex = index;
+                updateSliceInfo();
+                
+                // Reapply analysis if it was active
+                if (wasAnalysisActive) {
+                    setTimeout(analyzeCurrentImage, 100);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

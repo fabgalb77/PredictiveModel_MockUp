@@ -1,0 +1,37 @@
+{
+  "patient_id": "P004",
+  "predicted_outcome": {
+    "comi_total": {
+      "value": 0.5,
+      "confidence_interval": [0.0, 2.3]
+    },
+    "back_pain": {
+      "value": 0.0,
+      "confidence_interval": [0.0, 1.5]
+    },
+    "leg_pain": {
+      "value": 0.0,
+      "confidence_interval": [0.0, 1.7]
+    },
+    "function": {
+      "value": 5.0,
+      "confidence_interval": [4.2, 7.0]
+    },
+    "quality_of_life": {
+      "value": 4,
+      "confidence_interval": [3, 5]
+    },
+    "social_disability": {
+      "value": 2,
+      "confidence_interval": [1, 3]
+    },
+    "work_disability": {
+      "value": 1,
+      "confidence_interval": [0, 2]
+    },
+    "complications_risk": {
+      "value": 3.0,
+      "confidence_interval": [0.0, 5.7]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Details - {{ patient.name }}{% endblock %}
+
+{% block content %}
+<div class="mt-4">
+    <h2>Patient Details</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ patient.name }} (ID: {{ patient.id }})</h5>
+            <p>Date of Birth: {{ patient.dob }}</p>
+            <p>Sex: {{ patient.sex }}</p>
+            <p>Height: {{ patient.height }} cm</p>
+            <p>Weight: {{ patient.weight }} kg</p>
+            <p>Smoking Status: {{ patient.smoking }}</p>
+            <div class="alert alert-info">
+                Detailed patient information and prediction interface will be added here.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

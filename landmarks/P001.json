@@ -1,0 +1,384 @@
+{
+  "patient_id": "P001",
+  "imaging_data": {
+    "XRAY_AP": {
+      "landmarks": {
+        "left_hip_center": [98, 2392],
+        "right_hip_center": [1476, 2364],
+        "upper_vert_endplate": {
+          "vertebra": "L1",
+          "left_point": [572, 226],
+          "right_point": [934, 248]
+        },
+        "lower_vert_endplate": {
+          "vertebra": "L5",
+          "left_point": [556, 1280],
+          "right_point": [984, 1258]
+        }
+      },
+      "measurements": {
+        "coronal_pelvic_tilt": 0.7,
+        "cobb_angle": 5
+      },
+      "image_dimensions": [1516, 2721]
+    },
+    "XRAY_LAT": {
+      "landmarks": {
+        "hip_center": [1098, 2690],
+        "sacral_plateau": {
+          "posterior_point": [716, 1802],
+          "anterior_point": [978, 2034]
+        },
+        "L1_superior_endplate": {
+          "posterior_point": [668, 502],
+          "anterior_point": [972, 440]
+        },
+        "L1_inferior_endplate": {
+          "posterior_point": [720, 722],
+          "anterior_point": [1014, 638]
+        },
+        "L5_superior_endplate": {
+          "posterior_point": [810, 1598],
+          "anterior_point": [1096, 1714]
+        },
+        "L5_inferior_endplate": {
+          "posterior_point": [748, 1788],
+          "anterior_point": [1014, 1932]
+        }
+      },
+      "measurements": {
+        "pelvic_incidence": 52.3,
+        "sacral_slope": 40.3,
+        "l1_s1_lordosis": 35.2,
+        "l1_slope": 15.0
+      },
+      "image_dimensions": [1352, 2869]
+    },
+    "MRI_T1_SAG": {
+      "slice_info": {
+        "total_slices": 19,
+        "central_slice": 9
+      },
+      "landmarks": {
+        "central_slice": {
+          "vertebral_bodies": [
+            {
+              "vertebra": "L1",
+              "corners": {
+                "superior_anterior": [224, 100],
+                "superior_posterior": [301, 106],
+                "inferior_anterior": [216, 153],
+                "inferior_posterior": [291, 164]
+              }
+            },
+            {
+              "vertebra": "L2",
+              "corners": {
+                "superior_anterior": [210, 177],
+                "superior_posterior": [292, 187],
+                "inferior_anterior": [202, 234],
+                "inferior_posterior": [285, 249]
+              }
+            },
+            {
+              "vertebra": "L3",
+              "corners": {
+                "superior_anterior": [198, 257],
+                "superior_posterior": [278, 264],
+                "inferior_anterior": [193, 323],
+                "inferior_posterior": [274, 322]
+              }
+            },
+            {
+              "vertebra": "L4",
+              "corners": {
+                "superior_anterior": [189, 345],
+                "superior_posterior": [271, 341],
+                "inferior_anterior": [196, 420],
+                "inferior_posterior": [274, 399]
+              }
+            },
+            {
+              "vertebra": "L5",
+              "corners": {
+                "superior_anterior": [200, 442],
+                "superior_posterior": [279, 421],
+                "inferior_anterior": [211, 503],
+                "inferior_posterior": [290, 472]
+              }
+            },
+            {
+              "vertebra": "S1",
+              "corners": {
+                "superior_anterior": [220, 537],
+                "superior_posterior": [292, 486]
+              }
+            }
+          ],
+          "disc_spaces": [
+            {
+              "level": "L1-L2",
+              "center": [252, 170],
+              "height": 8.5,
+              "width": 45
+            },
+            {
+              "level": "L2-L3",
+              "center": [245, 248],
+              "height": 9.2,
+              "width": 46
+            },
+            {
+              "level": "L3-L4",
+              "center": [235, 332],
+              "height": 10.5,
+              "width": 48
+            },
+            {
+              "level": "L4-L5",
+              "center": [237, 418],
+              "height": 9.8,
+              "width": 47
+            },
+            {
+              "level": "L5-S1",
+              "center": [257, 501],
+              "height": 7.3,
+              "width": 46
+            }
+          ]
+        }
+      },
+      "measurements": {
+        "vertebral_bodies": {
+          "L1": {
+            "bone_mineral_density": 0.96,
+            "modic_changes": "no"
+          },
+          "L2": {
+            "bone_mineral_density": 0.94,
+            "modic_changes": "no"
+          },
+          "L3": {
+            "bone_mineral_density": 0.92,
+            "modic_changes": "no"
+          },
+          "L4": {
+            "bone_mineral_density": 0.88,
+            "modic_changes": "no"
+          },
+          "L5": {
+            "bone_mineral_density": 0.85,
+            "modic_changes": "no"
+          }
+        },
+        "intervertebral_discs": {
+          "L1-L2": {
+            "disc_height": 8.5,
+            "pfirrmann_grade": 2,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L2-L3": {
+            "disc_height": 9.2,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L3-L4": {
+            "disc_height": 10.5,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L4-L5": {
+            "disc_height": 9.8,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": true,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L5-S1": {
+            "disc_height": 7.3,
+            "pfirrmann_grade": 4,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": true,
+            "endplate_defects": true,
+            "disc_herniation": false
+          }
+        }
+      },
+      "image_dimensions": [640, 640]
+    },
+    "MRI_T2_SAG": {
+      "slice_info": {
+        "total_slices": 19,
+        "central_slice": 9
+      },
+      "landmarks": {
+        "central_slice": {
+          "vertebral_bodies": [
+            {
+              "vertebra": "L1",
+              "corners": {
+                "superior_anterior": [209, 96],
+                "superior_posterior": [287, 99],
+                "inferior_anterior": [207, 145],
+                "inferior_posterior": [280, 156]
+              }
+            },
+            {
+              "vertebra": "L2",
+              "corners": {
+                "superior_anterior": [201, 171],
+                "superior_posterior": [277, 178],
+                "inferior_anterior": [195, 227],
+                "inferior_posterior": [272, 233]
+              }
+            },
+            {
+              "vertebra": "L3",
+              "corners": {
+                "superior_anterior": [188, 244],
+                "superior_posterior": [266, 252],
+                "inferior_anterior": [184, 303],
+                "inferior_posterior": [265, 302]
+              }
+            },
+            {
+              "vertebra": "L4",
+              "corners": {
+                "superior_anterior": [177, 327],
+                "superior_posterior": [257, 327],
+                "inferior_anterior": [182, 391],
+                "inferior_posterior": [265, 379]
+              }
+            },
+            {
+              "vertebra": "L5",
+              "corners": {
+                "superior_anterior": [186, 417],
+                "superior_posterior": [262, 400],
+                "inferior_anterior": [204, 477],
+                "inferior_posterior": [274, 445]
+              }
+            },
+            {
+              "vertebra": "S1",
+              "corners": {
+                "superior_anterior": [210, 509],
+                "superior_posterior": [279, 465]
+              }
+            }
+          ],
+          "disc_spaces": [
+            {
+              "level": "L1-L2",
+              "center": [239, 162],
+              "height": 8.5,
+              "width": 45
+            },
+            {
+              "level": "L2-L3",
+              "center": [232, 240],
+              "height": 9.2,
+              "width": 46
+            },
+            {
+              "level": "L3-L4",
+              "center": [225, 319],
+              "height": 10.5,
+              "width": 48
+            },
+            {
+              "level": "L4-L5",
+              "center": [227, 397],
+              "height": 9.8,
+              "width": 47
+            },
+            {
+              "level": "L5-S1",
+              "center": [247, 467],
+              "height": 7.3,
+              "width": 46
+            }
+          ]
+        }
+      },
+      "measurements": {
+        "vertebral_bodies": {
+          "L1": {
+            "bone_mineral_density": 0.96,
+            "modic_changes": "no"
+          },
+          "L2": {
+            "bone_mineral_density": 0.94,
+            "modic_changes": "no"
+          },
+          "L3": {
+            "bone_mineral_density": 0.92,
+            "modic_changes": "no"
+          },
+          "L4": {
+            "bone_mineral_density": 0.88,
+            "modic_changes": "no"
+          },
+          "L5": {
+            "bone_mineral_density": 0.85,
+            "modic_changes": "no"
+          }
+        },
+        "intervertebral_discs": {
+          "L1-L2": {
+            "disc_height": 8.5,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L2-L3": {
+            "disc_height": 9.2,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 1,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L3-L4": {
+            "disc_height": 10.5,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 2,
+            "foraminal_stenosis": false,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L4-L5": {
+            "disc_height": 9.8,
+            "pfirrmann_grade": 3,
+            "central_canal_stenosis": 3,
+            "foraminal_stenosis": true,
+            "endplate_defects": false,
+            "disc_herniation": false
+          },
+          "L5-S1": {
+            "disc_height": 7.3,
+            "pfirrmann_grade": 4,
+            "central_canal_stenosis": 2,
+            "foraminal_stenosis": true,
+            "endplate_defects": true,
+            "disc_herniation": false
+          }
+        }
+      },
+      "image_dimensions": [608, 608]
+    }
+  }
+}

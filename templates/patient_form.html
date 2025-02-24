@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% if is_edit %}Edit{% else %}Add{% endif %} Patient</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: var(--background-color);
+            font-family: 'Inter', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-title {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+        }
+        .form-section-title {
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+        .form-footer {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .disabled-field {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h3 class="form-title">{% if is_edit %}Edit{% else %}Add{% endif %} Patient</h3>
+        
+        <form id="patientForm">
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h5 class="form-section-title">Basic Information</h5>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="patientId" class="form-label">Patient ID</label>
+                        <input type="text" class="form-control disabled-field" id="patientId" value="{{ patient.id if patient else 'Auto-assigned' }}" readonly>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" value="{{ patient.name if patient else '' }}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="dob" class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" id="dob" value="{{ patient.dob if patient else '' }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="sex" class="form-label">Sex</label>
+                        <select class="form-select" id="sex">
+                            <option value="" {% if not patient %}selected{% endif %}>Select</option>
+                            <option value="M" {% if patient and patient.sex == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if patient and patient.sex == 'F' %}selected{% endif %}>Female</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="asa" class="form-label">ASA Score</label>
+                        <select class="form-select" id="asa">
+                            <option value="" {% if not patient %}selected{% endif %}>Select</option>
+                            <option value="1" {% if patient and patient.asa == '1' %}selected{% endif %}>ASA I</option>
+                            <option value="2" {% if patient and patient.asa == '2' %}selected{% endif %}>ASA II</option>
+                            <option value="3" {% if patient and patient.asa == '3' %}selected{% endif %}>ASA III</option>
+                            <option value="4" {% if patient and patient.asa == '4' %}selected{% endif %}>ASA IV</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="height" class="form-label">Height (cm)</label>
+                        <input type="number" class="form-control" id="height" value="{{ patient.height if patient else '' }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="weight" class="form-label">Weight (kg)</label>
+                        <input type="number" class="form-control" id="weight" value="{{ patient.weight if patient else '' }}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="smoking" class="form-label">Smoking Status</label>
+                        <select class="form-select" id="smoking">
+                            <option value="" {% if not patient %}selected{% endif %}>Select</option>
+                            <option value="Never" {% if patient and patient.smoking == 'Never' %}selected{% endif %}>Never</option>
+                            <option value="Former" {% if patient and patient.smoking == 'Former' %}selected{% endif %}>Former</option>
+                            <option value="Current" {% if patient and patient.smoking == 'Current' %}selected{% endif %}>Current</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- COMI Questionnaire -->
+            <div class="form-section">
+                <h5 class="form-section-title">COMI Back Pain Questionnaire</h5>
+                
+                <div class="mb-3">
+                    <label class="form-label">1. Back pain intensity (0-10)</label>
+                    <input type="range" class="form-range" min="0" max="10" step="1" id="comiBackPain" 
+                           value="{{ patient.comiBackPain if patient else '0' }}" oninput="updateRangeValue('comiBackPain')">
+                    <div class="d-flex justify-content-between">
+                        <span>0 (No pain)</span>
+                        <span id="comiBackPainValue">{{ patient.comiBackPain if patient else '0' }}</span>
+                        <span>10 (Worst pain)</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">2. Leg pain intensity (0-10)</label>
+                    <input type="range" class="form-range" min="0" max="10" step="1" id="comiLegPain" 
+                           value="{{ patient.comiLegPain if patient else '0' }}" oninput="updateRangeValue('comiLegPain')">
+                    <div class="d-flex justify-content-between">
+                        <span>0 (No pain)</span>
+                        <span id="comiLegPainValue">{{ patient.comiLegPain if patient else '0' }}</span>
+                        <span>10 (Worst pain)</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">3. Back-related function (0-10)</label>
+                    <input type="range" class="form-range" min="0" max="10" step="1" id="comiFunction" 
+                           value="{{ patient.comiFunction if patient else '0' }}" oninput="updateRangeValue('comiFunction')">
+                    <div class="d-flex justify-content-between">
+                        <span>0 (No limitations)</span>
+                        <span id="comiFunctionValue">{{ patient.comiFunction if patient else '0' }}</span>
+                        <span>10 (Extreme limitations)</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">4. Symptom-specific well-being (0-4)</label>
+                    <select class="form-select" id="comiWellbeing">
+                        <option value="0" {% if patient and patient.comiWellbeing == '0' %}selected{% endif %}>Very satisfied</option>
+                        <option value="1" {% if patient and patient.comiWellbeing == '1' %}selected{% endif %}>Somewhat satisfied</option>
+                        <option value="2" {% if patient and patient.comiWellbeing == '2' %}selected{% endif %}>Neither satisfied nor dissatisfied</option>
+                        <option value="3" {% if patient and patient.comiWellbeing == '3' %}selected{% endif %}>Somewhat dissatisfied</option>
+                        <option value="4" {% if patient and patient.comiWellbeing == '4' %}selected{% endif %}>Very dissatisfied</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">5. General quality of life (0-4)</label>
+                    <select class="form-select" id="comiQol">
+                        <option value="0" {% if patient and patient.comiQol == '0' %}selected{% endif %}>Very good</option>
+                        <option value="1" {% if patient and patient.comiQol == '1' %}selected{% endif %}>Good</option>
+                        <option value="2" {% if patient and patient.comiQol == '2' %}selected{% endif %}>Moderate</option>
+                        <option value="3" {% if patient and patient.comiQol == '3' %}selected{% endif %}>Bad</option>
+                        <option value="4" {% if patient and patient.comiQol == '4' %}selected{% endif %}>Very bad</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">6. Disability - Work (0-5)</label>
+                    <select class="form-select" id="comiWorkDisability">
+                        <option value="0" {% if patient and patient.comiWorkDisability == '0' %}selected{% endif %}>None</option>
+                        <option value="1" {% if patient and patient.comiWorkDisability == '1' %}selected{% endif %}>1-7 days</option>
+                        <option value="2" {% if patient and patient.comiWorkDisability == '2' %}selected{% endif %}>8-14 days</option>
+                        <option value="3" {% if patient and patient.comiWorkDisability == '3' %}selected{% endif %}>15-30 days</option>
+                        <option value="4" {% if patient and patient.comiWorkDisability == '4' %}selected{% endif %}>More than 30 days</option>
+                        <option value="5" {% if patient and patient.comiWorkDisability == '5' %}selected{% endif %}>Not working due to back pain</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">7. Disability - Social activities (0-5)</label>
+                    <select class="form-select" id="comiSocialDisability">
+                        <option value="0" {% if patient and patient.comiSocialDisability == '0' %}selected{% endif %}>None</option>
+                        <option value="1" {% if patient and patient.comiSocialDisability == '1' %}selected{% endif %}>1-7 days</option>
+                        <option value="2" {% if patient and patient.comiSocialDisability == '2' %}selected{% endif %}>8-14 days</option>
+                        <option value="3" {% if patient and patient.comiSocialDisability == '3' %}selected{% endif %}>15-30 days</option>
+                        <option value="4" {% if patient and patient.comiSocialDisability == '4' %}selected{% endif %}>More than 30 days</option>
+                        <option value="5" {% if patient and patient.comiSocialDisability == '5' %}selected{% endif %}>Always restricted</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Imaging -->
+            <div class="form-section">
+                <h5 class="form-section-title">Imaging</h5>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-outline-primary" onclick="showComingSoon()">
+                        <i class="bi bi-images"></i> Add Images
+                    </button>
+                    <small class="text-muted d-block mt-2">Upload X-rays, MRI, and other imaging studies</small>
+                </div>
+            </div>
+            
+            <div class="form-footer">
+                <button type="button" class="btn btn-secondary" onclick="window.close()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="showComingSoon()">Save</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Coming Soon Modal -->
+    <div class="modal fade" id="comingSoonModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Information</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    This feature is coming soon!
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let comingSoonModal;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            comingSoonModal = new bootstrap.Modal(document.getElementById('comingSoonModal'));
+            
+            // Initialize range sliders
+            updateRangeValue('comiBackPain');
+            updateRangeValue('comiLegPain');
+            updateRangeValue('comiFunction');
+        });
+        
+        function updateRangeValue(id) {
+            const slider = document.getElementById(id);
+            const valueDisplay = document.getElementById(id + 'Value');
+            valueDisplay.textContent = slider.value;
+        }
+        
+        function showComingSoon() {
+            comingSoonModal.show();
+        }
+    </script>
+</body>
+</html>
